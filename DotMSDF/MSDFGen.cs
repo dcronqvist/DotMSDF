@@ -1,16 +1,17 @@
 using System;
 using System.IO;
+using FreeTypeSharp;
 
 namespace DotMSDF;
 
-public record MSDFGenFreeTypeHandle(IntPtr Handle);
-public record MSDFGenFontHandle(IntPtr Handle);
+public record MSDFGenFreeTypeHandle(FreeTypeLibrary Library);
+public record MSDFGenFontHandle(FreeTypeFaceFacade Face);
 
 public static class MSDFGen
 {
     public static MSDFGenFreeTypeHandle InitializeFreeType()
     {
-        throw new NotImplementedException();
+        return new MSDFGenFreeTypeHandle(new FreeTypeLibrary());
     }
 
     public static MSDFGenFontHandle LoadFont(

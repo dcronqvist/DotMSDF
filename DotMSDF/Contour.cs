@@ -16,6 +16,11 @@ public class Contour
         _edges = edges.ToList();
     }
 
+    public void ClearEdges()
+    {
+        _edges.Clear();
+    }
+
     public void AddEdge(IEdgeSegment edge)
     {
         _edges.Add(edge);

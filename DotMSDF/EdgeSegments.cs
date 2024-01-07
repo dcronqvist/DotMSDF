@@ -400,6 +400,11 @@ public class QuadraticSegment(Vector2 p0, Vector2 p1, Vector2 p2, EdgeColor edge
         return Enumerable.Repeat(0, total).Select(i => new Vector2(x[i], dy[i]));
     }
 
+    public IEdgeSegment ConvertToCubic()
+    {
+        return new CubicSegment(P0, Vector2.Lerp(P0, P1, 2 / 3f), Vector2.Lerp(P1, P2, 1 / 3f), P2, EdgeColor);
+    }
+
     public void Bound(ref RectangleF bounds)
     {
         bounds = Helpers.PointBounds(bounds, P0);
