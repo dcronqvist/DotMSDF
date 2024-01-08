@@ -1,5 +1,8 @@
+using System;
+
 namespace DotMSDF;
 
+[Flags]
 public enum EdgeColor
 {
     Black = 0,

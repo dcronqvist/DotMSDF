@@ -14,4 +14,6 @@ public static class ExtensionsVector2
     {
         return vector2.X * other.Y - vector2.Y * other.X;
     }
+
+    public static Vector2 Normalize(this Vector2 v) => Vector2.Normalize(v);
 }

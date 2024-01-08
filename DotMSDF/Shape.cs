@@ -25,6 +25,16 @@ public class Shape
         return contour;
     }
 
+    public void ClearContours()
+    {
+        _contours.Clear();
+    }
+
+    public void RemoveContour(Contour contour)
+    {
+        _contours.Remove(contour);
+    }
+
     public void Normalize()
     {
         foreach (var contour in _contours)

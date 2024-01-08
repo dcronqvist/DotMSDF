@@ -5,13 +5,20 @@ public class BasicExample
     [Fact]
     public void SimpleTest()
     {
-        /*
-
-        using freeTypeHandle = MSDFGen.InitializeFreeType();
+        var freeTypeHandle = MSDFGen.InitializeFreeType();
         //using fontHandle = MSDFGen.LoadFont(freeTypeHandle, inMemoryTTFbytes);
-        using fontHandle = MSDFGen.LoadFont(freeTypeHandle, "path/to/font.ttf");
+        var fontHandle = MSDFGen.LoadFont(freeTypeHandle, @"/Users/dcronqvist/repos/dotmsdf/DotMSDF.Tests/opensans.ttf");
 
-        IGlyphStorage glyphs = new GlyphStorage();
+        FontGeometry fontGeometry = new FontGeometry();
+        fontGeometry.LoadCharset(fontHandle, 1.0f, Charset.ASCII);
+
+        float maxCornerAngle = 3.0f;
+        foreach (var glyph in fontGeometry.GetGlyphs())
+        {
+            glyph.EdgeColoring(GlyphGeometry.EdgeColoringSimple, maxCornerAngle, 0);
+        }
+
+        /*
         
         FontGeometry.LoadCharSet(ref glyphs, fontHandle, 1.0f, FontGeometry.CharSet.ASCII);
 
