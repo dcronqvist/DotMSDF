@@ -7,6 +7,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DotMSDF", "DotMSDF\DotMSDF.
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DotMSDF.Tests", "DotMSDF.Tests\DotMSDF.Tests.csproj", "{834F51BC-A981-4675-ACEE-21B3C6FEC4B0}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DotMSDF.Port", "DotMSDF.Port\DotMSDF.Port.csproj", "{B0AD7E5A-93F6-4735-9D90-22F84FEB04BE}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -24,5 +26,9 @@ Global
 		{834F51BC-A981-4675-ACEE-21B3C6FEC4B0}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{834F51BC-A981-4675-ACEE-21B3C6FEC4B0}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{834F51BC-A981-4675-ACEE-21B3C6FEC4B0}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B0AD7E5A-93F6-4735-9D90-22F84FEB04BE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B0AD7E5A-93F6-4735-9D90-22F84FEB04BE}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B0AD7E5A-93F6-4735-9D90-22F84FEB04BE}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B0AD7E5A-93F6-4735-9D90-22F84FEB04BE}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

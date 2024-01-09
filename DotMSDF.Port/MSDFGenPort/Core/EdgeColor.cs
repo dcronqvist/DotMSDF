@@ -1,6 +1,6 @@
 using System;
 
-namespace DotMSDF;
+namespace DotMSDF.Port;
 
 [Flags]
 public enum EdgeColor

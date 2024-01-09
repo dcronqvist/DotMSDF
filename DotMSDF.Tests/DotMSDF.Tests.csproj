@@ -24,6 +24,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\DotMSDF\DotMSDF.csproj" />
+    <ProjectReference Include="..\DotMSDF.Port\DotMSDF.Port.csproj" />
   </ItemGroup>
 
 </Project>
