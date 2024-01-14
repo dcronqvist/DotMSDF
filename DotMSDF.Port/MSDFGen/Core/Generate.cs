@@ -1,12 +1,62 @@
 using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
+using static DotMSDF.Port.Arithmetics;
+using static DotMSDF.Port.Vector2;
 
 namespace DotMSDF.Port;
 
+// public enum ErrorCorrectionConfigMode
+// {
+//     DISABLED,
+//     INDISCRIMINATE,
+//     EDGE_PRIORITY,
+//     EDGE_ONLY
+// }
+
+// public enum ErrorCorrectionConfigDistanceCheckMode
+// {
+//     DO_NOT_CHECK_DISTANCE,
+//     CHECK_DISTANCE_AT_EDGE,
+//     ALWAYS_CHECK_DISTANCE
+// }
+
+// public record ErrorCorrectionConfig(
+//     double DefaultMinDeviationRatio,
+//     double DefaultMinImproveRatio,
+//     ErrorCorrectionConfigMode Mode,
+//     ErrorCorrectionConfigDistanceCheckMode DistanceCheckMode,
+//     double MinDeviationRatio,
+//     double MinImproveRatio);
+
+// public record GeneratorConfig(bool OverlapSupport);
+// public record MSDFGeneratorConfig(bool OverlapSupport, ErrorCorrectionConfig ErrorCorrection) : GeneratorConfig(OverlapSupport);
+
+// public static class Generate
+// {
+//     public static void GenerateDistanceField<TContourCombiner>()
+
+//     public static void GenerateMSDF(ref Bitmap<Float3> output, Shape shape, Projection projection, double range, MSDFGeneratorConfig config)
+//     {
+//         if (config.OverlapSupport)
+//         {
+
+//         }
+//         else
+//         {
+
+//         }
+//     }
+
+//     public static void GenerateMSDF(ref Bitmap<Float3> output, Shape shape, double range, Vector2 scale, Vector2 translate, ErrorCorrectionConfig errorCorrectionConfig, bool overlapSupport)
+//     {
+//         GenerateMSDF(ref output, shape, new Projection(scale, translate), range, new MSDFGeneratorConfig(overlapSupport, errorCorrectionConfig));
+//     }
+// }
+
 public static class Generate
 {
-    private static bool PixelClash(FloatRgb a, FloatRgb b, double threshold)
+    private static bool PixelClash(Float3 a, Float3 b, double threshold)
     {
         // Only consider pair where both are on the inside or both are on the outside
         var aIn = (a.R > .5f ? 1 : 0) + (a.G > .5f ? 1 : 0) + (a.B > .5f ? 1 : 0) >= 2;
@@ -64,7 +114,7 @@ public static class Generate
                Math.Abs(bc - .5f); // Out of the pair, only flag the pixel farther from a shape edge
     }
 
-    private static void MsdfErrorCorrection(Bitmap<FloatRgb> output, Vector2 threshold)
+    private static void MsdfErrorCorrection(Bitmap<Float3> output, Vector2 threshold)
     {
         var clashes = new List<KeyValuePair<int, int>>();
         int w = output.Width, h = output.Height;
@@ -79,7 +129,7 @@ public static class Generate
         foreach (var clash in clashes)
         {
             ref var pixel = ref output[clash.Key, clash.Value];
-            var med = Arithmetic.Median(pixel.R, pixel.G, pixel.B);
+            var med = Median(pixel.R, pixel.G, pixel.B);
             pixel.R = med;
             pixel.G = med;
             pixel.B = med;
@@ -107,28 +157,28 @@ public static class Generate
     private static void MsdfScanContourEdges(Contour contour, Vector2 p, ref EdgePoint r, ref EdgePoint g,
         ref EdgePoint b)
     {
-        foreach (var edge in contour)
+        foreach (var edge in contour.Edges)
         {
             double param = 0;
-            var distance = edge.SignedDistance(p, ref param);
-            if ((edge.Color & EdgeColor.Red) != 0 && distance < r.MinDistance)
+            var distance = edge.EdgeSegment.SignedDistance(p, ref param);
+            if ((edge.EdgeSegment.Color & EdgeColor.RED) != 0 && distance < r.MinDistance)
             {
                 r.MinDistance = distance;
-                r.NearEdge = edge;
+                r.NearEdge = edge.EdgeSegment;
                 r.NearParam = param;
             }
 
-            if ((edge.Color & EdgeColor.Green) != 0 && distance < g.MinDistance)
+            if ((edge.EdgeSegment.Color & EdgeColor.GREEN) != 0 && distance < g.MinDistance)
             {
                 g.MinDistance = distance;
-                g.NearEdge = edge;
+                g.NearEdge = edge.EdgeSegment;
                 g.NearParam = param;
             }
 
-            if ((edge.Color & EdgeColor.Blue) != 0 && distance < b.MinDistance)
+            if ((edge.EdgeSegment.Color & EdgeColor.BLUE) != 0 && distance < b.MinDistance)
             {
                 b.MinDistance = distance;
-                b.NearEdge = edge;
+                b.NearEdge = edge.EdgeSegment;
                 b.NearParam = param;
             }
         }
@@ -147,10 +197,10 @@ public static class Generate
                 double dummy = 0;
                 var p = new Vector2(x + .5, y + .5) / scale - translate;
                 var minDistance = SignedDistance.Infinite;
-                foreach (var contour in shape)
-                    foreach (var edge in contour)
+                foreach (var contour in shape.Contours)
+                    foreach (var edge in contour.Edges)
                     {
-                        var distance = edge.SignedDistance(p, ref dummy);
+                        var distance = edge.EdgeSegment.SignedDistance(p, ref dummy);
                         if (distance < minDistance)
                             minDistance = distance;
                     }
@@ -171,17 +221,17 @@ public static class Generate
             {
                 var p = new Vector2(x + .5, y + .5) / scale - translate;
                 var minDistance = SignedDistance.Infinite;
-                EdgeSegment nearEdge = null;
+                IEdgeSegment nearEdge = null;
                 double nearParam = 0;
-                foreach (var contour in shape)
-                    foreach (var edge in contour)
+                foreach (var contour in shape.Contours)
+                    foreach (var edge in contour.Edges)
                     {
                         double param = 0;
-                        var distance = edge.SignedDistance(p, ref param);
+                        var distance = edge.EdgeSegment.SignedDistance(p, ref param);
                         if (distance < minDistance)
                         {
                             minDistance = distance;
-                            nearEdge = edge;
+                            nearEdge = edge.EdgeSegment;
                             nearParam = param;
                         }
                     }
@@ -192,7 +242,7 @@ public static class Generate
         }
     }
 
-    public static void MsdfLegacy(Bitmap<FloatRgb> output, Shape shape, double range, Vector2 scale,
+    public static void MsdfLegacy(Bitmap<Float3> output, Shape shape, double range, Vector2 scale,
         Vector2 translate, double edgeThreshold = 1.00000001)
     {
         int w = output.Width, h = output.Height;
@@ -205,7 +255,7 @@ public static class Generate
 
                 EdgePoint r = EdgePoint.Default, g = EdgePoint.Default, b = EdgePoint.Default;
 
-                foreach (var contour in shape)
+                foreach (var contour in shape.Contours)
                     MsdfScanContourEdges(contour, p, ref r, ref g, ref b);
 
                 r.NearEdge?.DistanceToPseudoDistance(ref r.MinDistance, p, r.NearParam);
@@ -221,7 +271,7 @@ public static class Generate
             MsdfErrorCorrection(output, edgeThreshold / (scale * range));
     }
 
-    public interface ISdfBase<T> where T : struct
+    public interface ISdfBase<T> where T : unmanaged
     {
         Bitmap<T> Output { set; }
         Shape Shape { set; }
@@ -235,7 +285,7 @@ public static class Generate
     {
     }
 
-    public interface IMsdf : ISdfBase<FloatRgb>
+    public interface IMsdf : ISdfBase<Float3>
     {
         double EdgeThreshold { set; }
     }
@@ -257,7 +307,7 @@ public static class Generate
     }
 
     private abstract class Overlapping<TDistance, TPixel> : ISdfBase<TPixel>
-        where TPixel : struct where TDistance : struct, IDistance
+        where TPixel : unmanaged where TDistance : struct, IDistance
     {
         protected TDistance[] ContourSd;
         protected List<int> Windings;
@@ -289,10 +339,10 @@ public static class Generate
 
         private void Init()
         {
-            Windings = new List<int>(Shape.Count);
-            foreach (var contour in Shape)
+            Windings = new List<int>(Shape.Contours.Count);
+            foreach (var contour in Shape.Contours)
                 Windings.Add(contour.Winding());
-            ContourSd = new TDistance[Shape.Count];
+            ContourSd = new TDistance[Shape.Contours.Count];
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -302,7 +352,7 @@ public static class Generate
             {
                 sd.Dist = context.PosDist;
                 context.Winding = 1;
-                for (var i = 0; i < Shape.Count; ++i)
+                for (var i = 0; i < Shape.Contours.Count; ++i)
                     if (Windings[i] > 0 && ContourSd[i].Dist > sd.Dist &&
                         Math.Abs(ContourSd[i].Dist) < Math.Abs(context.NegDist))
                         sd = ContourSd[i];
@@ -311,13 +361,13 @@ public static class Generate
             {
                 sd.Dist = context.NegDist;
                 context.Winding = -1;
-                for (var i = 0; i < Shape.Count; ++i)
+                for (var i = 0; i < Shape.Contours.Count; ++i)
                     if (Windings[i] < 0 && ContourSd[i].Dist < sd.Dist &&
                         Math.Abs(ContourSd[i].Dist) < Math.Abs(context.PosDist))
                         sd = ContourSd[i];
             }
 
-            for (var i = 0; i < Shape.Count; ++i)
+            for (var i = 0; i < Shape.Contours.Count; ++i)
                 if (Windings[i] != context.Winding && Math.Abs(ContourSd[i].Dist) < Math.Abs(sd.Dist))
                     sd = ContourSd[i];
             return sd;
@@ -342,7 +392,7 @@ public static class Generate
         }
     }
 
-    private class MsdfImpl : Overlapping<MultiDistance, FloatRgb>, IMsdf
+    private class MsdfImpl : Overlapping<MultiDistance, Float3>, IMsdf
     {
         private static readonly MultiDistance Infinite = new MultiDistance
         {
@@ -362,16 +412,16 @@ public static class Generate
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        protected override FloatRgb ComputePixel(ref InstanceContext ctx)
+        protected override Float3 ComputePixel(ref InstanceContext ctx)
         {
             EdgePoint sr = EdgePoint.Default, sg = EdgePoint.Default, sb = EdgePoint.Default;
             var d = Math.Abs(SignedDistance.Infinite.Distance);
 
-            for (var i = 0; i < Shape.Count; ++i)
+            for (var i = 0; i < Shape.Contours.Count; ++i)
             {
                 EdgePoint r = EdgePoint.Default, g = EdgePoint.Default, b = EdgePoint.Default;
 
-                MsdfScanContourEdges(Shape[i], ctx.P, ref r, ref g, ref b);
+                MsdfScanContourEdges(Shape.Contours[i], ctx.P, ref r, ref g, ref b);
 
                 if (r.MinDistance < sr.MinDistance)
                     sr = r;
@@ -380,7 +430,7 @@ public static class Generate
                 if (b.MinDistance < sb.MinDistance)
                     sb = b;
 
-                var medMinDistance = Math.Abs(Arithmetic.Median(r.MinDistance.Distance,
+                var medMinDistance = Math.Abs(Median(r.MinDistance.Distance,
                     g.MinDistance.Distance,
                     b.MinDistance.Distance));
 
@@ -393,7 +443,7 @@ public static class Generate
                 r.NearEdge?.DistanceToPseudoDistance(ref r.MinDistance, ctx.P, r.NearParam);
                 g.NearEdge?.DistanceToPseudoDistance(ref g.MinDistance, ctx.P, g.NearParam);
                 b.NearEdge?.DistanceToPseudoDistance(ref b.MinDistance, ctx.P, b.NearParam);
-                medMinDistance = Arithmetic.Median(r.MinDistance.Distance, g.MinDistance.Distance,
+                medMinDistance = Median(r.MinDistance.Distance, g.MinDistance.Distance,
                     b.MinDistance.Distance);
                 ContourSd[i].R = r.MinDistance.Distance;
                 ContourSd[i].G = g.MinDistance.Distance;
@@ -408,7 +458,7 @@ public static class Generate
 
             var msd = ComputeSd(Infinite, ref ctx);
 
-            if (Arithmetic.Median(sr.MinDistance.Distance, sg.MinDistance.Distance, sb.MinDistance.Distance) ==
+            if (Median(sr.MinDistance.Distance, sg.MinDistance.Distance, sb.MinDistance.Distance) ==
                 msd.Med)
             {
                 msd.R = sr.MinDistance.Distance;
@@ -416,7 +466,7 @@ public static class Generate
                 msd.B = sb.MinDistance.Distance;
             }
 
-            return new FloatRgb
+            return new Float3
             {
                 R = (float)(msd.R / Range + .5),
                 G = (float)(msd.G / Range + .5),
@@ -437,12 +487,12 @@ public static class Generate
         protected override float ComputePixel(ref InstanceContext ctx)
         {
             double dummy = 0;
-            for (var i = 0; i < Shape.Count; ++i)
+            for (var i = 0; i < Shape.Contours.Count; ++i)
             {
                 var minDistance = SignedDistance.Infinite;
-                foreach (var edge in Shape[i])
+                foreach (var edge in Shape.Contours[i].Edges)
                 {
-                    var distance = edge.SignedDistance(ctx.P, ref dummy);
+                    var distance = edge.EdgeSegment.SignedDistance(ctx.P, ref dummy);
                     if (distance < minDistance)
                         minDistance = distance;
                 }
@@ -461,19 +511,19 @@ public static class Generate
         protected override float ComputePixel(ref InstanceContext ctx)
         {
             var sd = SignedDistance.Infinite.Distance;
-            for (var i = 0; i < Shape.Count; ++i)
+            for (var i = 0; i < Shape.Contours.Count; ++i)
             {
                 var minDistance = SignedDistance.Infinite;
-                EdgeSegment nearEdge = null;
+                IEdgeSegment nearEdge = null;
                 double nearParam = 0;
-                foreach (var edge in Shape[i])
+                foreach (var edge in Shape.Contours[i].Edges)
                 {
                     double param = 0;
-                    var distance = edge.SignedDistance(ctx.P, ref param);
+                    var distance = edge.EdgeSegment.SignedDistance(ctx.P, ref param);
                     if (distance < minDistance)
                     {
                         minDistance = distance;
-                        nearEdge = edge;
+                        nearEdge = edge.EdgeSegment;
                         nearParam = param;
                     }
                 }
@@ -517,7 +567,7 @@ public static class Generate
         };
 
         internal SignedDistance MinDistance;
-        internal EdgeSegment NearEdge;
+        internal IEdgeSegment NearEdge;
         internal double NearParam;
     }
 }

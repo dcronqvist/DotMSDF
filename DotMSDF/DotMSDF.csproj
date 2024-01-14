@@ -11,4 +11,8 @@
     <PackageReference Include="FreeTypeSharp" Version="1.1.3" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\DotMSDF.Port\DotMSDF.Port.csproj" />
+  </ItemGroup>
+
 </Project>
